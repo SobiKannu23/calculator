@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculator App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 400px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+
+        .calculator {
+            background: #f5f5f5;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .display {
+            background: #222;
+            color: #fff;
+            font-size: 32px;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: right;
+            margin-bottom: 20px;
+            min-height: 70px;
+            word-wrap: break-word;
+            word-break: break-all;
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        button {
+            padding: 20px;
+            font-size: 20px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .btn-number {
+            background: #fff;
+            color: #333;
+        }
+
+        .btn-operator {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-clear {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .btn-equals {
+            background: #51cf66;
+            color: white;
+            grid-column: span 2;
+        }
+
+        .history {
+            margin-top: 20px;
+        }
+
+        .history h2 {
+            color: #333;
+            font-size: 20px;
+            margin-bottom: 15px;
+        }
+
+        .history-list {
+            max-height: 200px;
+            overflow-y: auto;
+            background: #f5f5f5;
+            border-radius: 10px;
+            padding: 15px;
+        }
+
+        .history-item {
+            background: white;
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 5px;
+            font-size: 14px;
+            color: #555;
+        }
+
+        .history-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .no-history {
+            text-align: center;
+            color: #999;
+            font-style: italic;
+        }
+
+        .clear-history {
+            margin-top: 10px;
+            width: 100%;
+            padding: 10px;
+            background: #ff8787;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .clear-history:hover {
+            background: #ff6b6b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Calculator</h1>
+        
+        <div class="calculator">
+            <div class="display" id="display">0</div>
+            
+            <div class="buttons">
+                <button class="btn-clear" onclick="clearDisplay()">C</button>
+                <button class="btn-operator" onclick="appendToDisplay('/')">/</button>
+                <button class="btn-operator" onclick="appendToDisplay('*')">*</button>
+                <button class="btn-operator" onclick="deleteLast()">←</button>
+                
+                <button class="btn-number" onclick="appendToDisplay('7')">7</button>
+                <button class="btn-number" onclick="appendToDisplay('8')">8</button>
+                <button class="btn-number" onclick="appendToDisplay('9')">9</button>
+                <button class="btn-operator" onclick="appendToDisplay('-')">-</button>
+                
+                <button class="btn-number" onclick="appendToDisplay('4')">4</button>
+                <button class="btn-number" onclick="appendToDisplay('5')">5</button>
+                <button class="btn-number" onclick="appendToDisplay('6')">6</button>
+                <button class="btn-operator" onclick="appendToDisplay('+')">+</button>
+                
+                <button class="btn-number" onclick="appendToDisplay('1')">1</button>
+                <button class="btn-number" onclick="appendToDisplay('2')">2</button>
+                <button class="btn-number" onclick="appendToDisplay('3')">3</button>
+                <button class="btn-number" onclick="appendToDisplay('.')">.</button>
+                
+                <button class="btn-number" onclick="appendToDisplay('0')" style="grid-column: span 2;">0</button>
+                <button class="btn-equals" onclick="calculate()">=</button>
+            </div>
+        </div>
+
+        <div class="history">
+            <h2>History</h2>
+            <div class="history-list" id="historyList">
+                <div class="no-history">No calculations yet</div>
+            </div>
+            <button class="clear-history" onclick="clearHistory()">Clear History</button>
+        </div>
+    </div>
+
+    <script>
+        let display = document.getElementById('display');
+        let currentInput = '0';
+
+        function appendToDisplay(value) {
+            if (currentInput === '0' && value !== '.') {
+                currentInput = value;
+            } else {
+                currentInput += value;
+            }
+            display.textContent = currentInput;
+        }
+
+        function clearDisplay() {
+            currentInput = '0';
+            display.textContent = currentInput;
+        }
+
+        function deleteLast() {
+            currentInput = currentInput.slice(0, -1);
+            if (currentInput === '') {
+                currentInput = '0';
+            }
+            display.textContent = currentInput;
+        }
+
+        async function calculate() {
+            try {
+                const response = await fetch('/api/calculate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        expression: currentInput
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    display.textContent = data.result;
+                    currentInput = data.result.toString();
+                    loadHistory();
+                } else {
+                    display.textContent = 'Error';
+                    setTimeout(() => {
+                        currentInput = '0';
+                        display.textContent = currentInput;
+                    }, 1500);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                display.textContent = 'Error';
+                setTimeout(() => {
+                    currentInput = '0';
+                    display.textContent = currentInput;
+                }, 1500);
+            }
+        }
+
+        async function loadHistory() {
+            try {
+                const response = await fetch('/api/history');
+                const data = await response.json();
+
+                const historyList = document.getElementById('historyList');
+                
+                if (data.history && data.history.length > 0) {
+                    historyList.innerHTML = '';
+                    data.history.forEach(item => {
+                        const historyItem = document.createElement('div');
+                        historyItem.className = 'history-item';
+                        historyItem.textContent = `${item.expression} = ${item.result}`;
+                        historyList.appendChild(historyItem);
+                    });
+                } else {
+                    historyList.innerHTML = '<div class="no-history">No calculations yet</div>';
+                }
+            } catch (error) {
+                console.error('Error loading history:', error);
+            }
+        }
+
+        async function clearHistory() {
+            try {
+                const response = await fetch('/api/history', {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    loadHistory();
+                }
+            } catch (error) {
+                console.error('Error clearing history:', error);
+            }
+        }
+
+        // Load history on page load
+        window.onload = loadHistory;
+
+        // Keyboard support
+        document.addEventListener('keydown', (event) => {
+            if (event.key >= '0' && event.key <= '9' || event.key === '.') {
+                appendToDisplay(event.key);
+            } else if (event.key === '+' || event.key === '-' || event.key === '*' || event.key === '/') {
+                appendToDisplay(event.key);
+            } else if (event.key === 'Enter') {
+                calculate();
+            } else if (event.key === 'Backspace') {
+                deleteLast();
+            } else if (event.key === 'Escape') {
+                clearDisplay();
+            }
+        });
+    </script>
+</body>
+</html>

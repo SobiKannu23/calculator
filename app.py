@@ -5,24 +5,44 @@ from psycopg2.extras import RealDictCursor
 from datetime import datetime
 import os
 import re
-# -*- coding: utf-8 -*-
 import sys
+import urllib.parse
+
+# UTF-8 output
 sys.stdout.reconfigure(encoding='utf-8')
 
 app = Flask(__name__)
 CORS(app)
 
+# -------------------------
 # Database configuration
-DB_CONFIG = {
-    'host': os.getenv('DB_HOST', 'localhost'),
-    'database': os.getenv('DB_NAME', 'calculator_db'),
-    'user': os.getenv('DB_USER', 'postgres'),
-    'password': os.getenv('DB_PASSWORD', 'sobyv2005'),
-    'port': os.getenv('DB_PORT', '5432')
-}
+# -------------------------
+DATABASE_URL = os.environ.get('DATABASE_URL')
 
+if DATABASE_URL:
+    # Parse DATABASE_URL (for Supabase / deployment)
+    url = urllib.parse.urlparse(DATABASE_URL)
+    DB_CONFIG = {
+        'host': url.hostname,
+        'database': url.path[1:],  # remove leading /
+        'user': url.username,
+        'password': url.password,
+        'port': url.port
+    }
+else:
+    # Local fallback
+    DB_CONFIG = {
+        'host': os.getenv('DB_HOST', 'localhost'),
+        'database': os.getenv('DB_NAME', 'calculator_db'),
+        'user': os.getenv('DB_USER', 'postgres'),
+        'password': os.getenv('DB_PASSWORD', 'sobyv2005'),
+        'port': os.getenv('DB_PORT', '5432')
+    }
+
+# -------------------------
+# Database connection
+# -------------------------
 def get_db_connection():
-    """Create and return a database connection"""
     try:
         conn = psycopg2.connect(**DB_CONFIG)
         return conn
@@ -30,8 +50,10 @@ def get_db_connection():
         print(f"Database connection error: {e}")
         return None
 
+# -------------------------
+# Initialize DB
+# -------------------------
 def init_db():
-    """Initialize the database and create tables if they don't exist"""
     conn = get_db_connection()
     if conn:
         try:
@@ -52,15 +74,13 @@ def init_db():
         finally:
             conn.close()
 
+# -------------------------
+# Safe expression evaluation
+# -------------------------
 def safe_eval(expression):
-    """Safely evaluate mathematical expressions"""
-    # Remove any characters that aren't numbers, operators, or decimal points
     allowed_chars = re.compile(r'^[0-9+\-*/.() ]+$')
-    
     if not allowed_chars.match(expression):
         raise ValueError("Invalid characters in expression")
-    
-    # Replace division by zero check
     try:
         result = eval(expression, {"__builtins__": {}}, {})
         return result
@@ -69,27 +89,24 @@ def safe_eval(expression):
     except Exception as e:
         raise ValueError(f"Invalid expression: {str(e)}")
 
+# -------------------------
+# Routes
+# -------------------------
 @app.route('/')
 def index():
-    """Serve the HTML frontend"""
     with open('index.html', 'r', encoding='utf-8') as f:
-
         return f.read()
 
 @app.route('/api/calculate', methods=['POST'])
 def calculate():
-    """Calculate the result of an expression and save to database"""
     try:
         data = request.get_json()
         expression = data.get('expression', '')
-        
         if not expression:
             return jsonify({'error': 'No expression provided'}), 400
-        
-        # Calculate the result
+
         result = safe_eval(expression)
-        
-        # Save to database
+
         conn = get_db_connection()
         if conn:
             try:
@@ -104,12 +121,9 @@ def calculate():
                 print(f"Error saving to database: {e}")
             finally:
                 conn.close()
-        
-        return jsonify({
-            'expression': expression,
-            'result': result
-        })
-    
+
+        return jsonify({'expression': expression, 'result': result})
+
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
     except Exception as e:
@@ -117,7 +131,6 @@ def calculate():
 
 @app.route('/api/history', methods=['GET'])
 def get_history():
-    """Get calculation history from database"""
     try:
         conn = get_db_connection()
         if conn:
@@ -128,12 +141,9 @@ def get_history():
                 )
                 history = cur.fetchall()
                 cur.close()
-                
-                # Convert datetime to string for JSON serialization
                 for item in history:
                     if 'created_at' in item:
                         item['created_at'] = item['created_at'].isoformat()
-                
                 return jsonify({'history': history})
             except Exception as e:
                 print(f"Error fetching history: {e}")
@@ -142,13 +152,11 @@ def get_history():
                 conn.close()
         else:
             return jsonify({'history': []})
-    
     except Exception as e:
         return jsonify({'error': 'Error fetching history'}), 500
 
 @app.route('/api/history', methods=['DELETE'])
 def clear_history():
-    """Clear all calculation history"""
     try:
         conn = get_db_connection()
         if conn:
@@ -166,6 +174,9 @@ def clear_history():
     except Exception as e:
         return jsonify({'error': 'Error clearing history'}), 500
 
+# -------------------------
+# Run app
+# -------------------------
 if __name__ == '__main__':
     init_db()
     app.run(debug=True, host='0.0.0.0', port=5000)
